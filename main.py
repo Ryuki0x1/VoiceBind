@@ -2,6 +2,8 @@ import sys
 import logging
 import threading
 import time
+import subprocess
+import ctypes
 
 from utils.logging import setup_logging
 from config.constants import get_model_path
@@ -9,17 +11,38 @@ from tray.menu import TrayApp
 from recognition.engine import engine
 from config.settings import app_settings
 from utils.startup import sync_startup_state
-from ui.settings_window import open_settings_window
 
 logger = logging.getLogger(__name__)
+
+MUTEX_NAME = "VoiceClip-{B8A7C3D1-2E4F-4A8C-9B6D-7E1F0A2C3D4E}"
+
+
+def _already_running():
+    kernel32 = ctypes.windll.kernel32
+    mutex = kernel32.CreateMutexW(None, False, MUTEX_NAME)
+    if not mutex:
+        return True
+    return kernel32.GetLastError() == 183
+
 
 class AppManager:
     def __init__(self):
         self.tray_app = None
 
+    def _exe_path(self):
+        if getattr(sys, 'frozen', False):
+            return sys.argv[0]
+        return [sys.executable, __file__]
+
     def show_settings(self, setup_mode=False):
         logger.info("Opening settings window...")
-        threading.Thread(target=open_settings_window, kwargs={"setup_mode": setup_mode}, daemon=True).start()
+        args = self._exe_path()
+        if not isinstance(args, list):
+            args = [args]
+        args.append("--settings")
+        if setup_mode:
+            args.append("--setup")
+        subprocess.Popen(args, creationflags=subprocess.DETACHED_PROCESS)
 
     def exit_app(self):
         logger.info("Exiting application...")
@@ -30,15 +53,7 @@ class AppManager:
     def run(self):
         logger.info("Starting VoiceClip Application...")
         sync_startup_state()
-
-        if not app_settings.general.setup_completed:
-            logger.info("First run detected. Opening setup...")
-            threading.Timer(1.0, self.show_settings, kwargs={"setup_mode": True}).start()
-        else:
-            model_path = get_model_path(app_settings.general.model_language)
-            if not model_path.exists():
-                logger.warning(f"Vosk model not found at {model_path}.")
-                threading.Timer(1.0, self.show_settings).start()
+        engine.start()
 
         self.tray_app = TrayApp(
             on_settings_clicked=self.show_settings,
@@ -50,9 +65,27 @@ class AppManager:
         except KeyboardInterrupt:
             self.exit_app()
 
+
 if __name__ == "__main__":
     setup_logging()
-    
-    # We should run the app manager
+
+    if "--settings" in sys.argv:
+        from ui.settings_window import open_settings_window
+        open_settings_window(setup_mode="--setup" in sys.argv)
+        sys.exit(0)
+
+    if _already_running():
+        logger.warning("VoiceClip is already running. Opening settings...")
+        subprocess.Popen(
+            [sys.executable, sys.argv[0], "--settings"],
+            creationflags=subprocess.DETACHED_PROCESS
+        )
+        sys.exit(0)
+
+    if not app_settings.general.setup_completed:
+        logger.info("First run detected. Opening setup...")
+        from ui.settings_window import open_settings_window
+        open_settings_window(setup_mode=True)
+
     manager = AppManager()
     manager.run()

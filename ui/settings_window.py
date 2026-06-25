@@ -5,6 +5,7 @@ from ttkbootstrap.constants import *
 import threading
 import logging
 import webbrowser
+from PIL import Image, ImageDraw, ImageTk
 
 from config.settings import app_settings
 from config.constants import MODELS_DIR, MODEL_FOLDERS, ASSETS_DIR
@@ -67,14 +68,30 @@ class SettingsWindow:
 
         footer = tb.Frame(self.root)
         footer.pack(fill=tk.X, padx=20, pady=(0, 8))
-        tb.Label(footer, text="github", foreground="#888").pack(side=tk.LEFT)
-        gh = tb.Label(footer, text="  @ryuki0x1", cursor="hand2",
+
+        gh_img = tb.Label(footer, image=self._circle_icon("#333"), text="")
+        gh_img.image = gh_img  # keep ref
+        gh_img.pack(side=tk.LEFT)
+        gh = tb.Label(footer, text=" @ryuki0x1", cursor="hand2",
                       foreground="#888")
         gh.pack(side=tk.LEFT)
         gh.bind("<Button-1>", lambda e: webbrowser.open("https://github.com/Ryuki0x1"))
-        tb.Label(footer, text="made with \u2665", foreground="#888").pack(side=tk.LEFT, expand=True)
-        tb.Label(footer, text="discord  ", foreground="#888").pack(side=tk.RIGHT)
-        tb.Label(footer, text="@ryukiwp", foreground="#888").pack(side=tk.RIGHT)
+
+        tb.Label(footer, text="  made with \u2665  ", foreground="#888").pack(side=tk.LEFT, expand=True)
+
+        tb.Label(footer, text="@ryukiwp ", foreground="#888").pack(side=tk.RIGHT)
+        dc_img = tb.Label(footer, image=self._circle_icon("#5865F2"), text="")
+        dc_img.image = dc_img
+        dc_img.pack(side=tk.RIGHT)
+
+    # ── Footer icons ──────────────────────────────────────────────
+
+    @staticmethod
+    def _circle_icon(color):
+        img = Image.new("RGBA", (14, 14), (0, 0, 0, 0))
+        draw = ImageDraw.Draw(img)
+        draw.ellipse((1, 1, 13, 13), fill=color)
+        return ImageTk.PhotoImage(img)
 
     # ── Commands Tab ──────────────────────────────────────────────
 
