@@ -1,0 +1,44 @@
+# Python bytecode and cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Environments
+venv/
+.venv/
+env/
+ENV/
+bin/
+lib/
+develop-eggs/
+downloads/
+eggs/
+.eggs/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# PyInstaller / Executable builds
+build/
+dist/
+*.spec
+
+# User configuration and logs
+config.json
+logs/
+
+# Vosk speech models (large binaries, downloaded dynamically or manually)
+models/
+
+# OS-specific files
+.DS_Store
+Thumbs.db
